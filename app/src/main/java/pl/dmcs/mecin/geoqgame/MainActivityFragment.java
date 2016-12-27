@@ -1,11 +1,13 @@
 package pl.dmcs.mecin.geoqgame;
 
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 
 /**
@@ -13,6 +15,22 @@ import android.view.ViewGroup;
  */
 public class MainActivityFragment extends Fragment {
 
+    OnClickActivityAction mCallback;
+
+    // Interface for parent to communicate
+    public interface OnClickActivityAction {
+        public void onButtonClick(Fragment fragment);
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        try {
+            mCallback = (OnClickActivityAction) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement OnClickActivityAction");
+        }
+    }
 
     public MainActivityFragment() {
         // Required empty public constructor
@@ -22,8 +40,18 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_main_activity, container, false);
+        final View view = inflater.inflate(R.layout.fragment_main_activity, container, false);
+
+        Button aboutButton = (Button) view.findViewById(R.id.aboutButtonFragment);
+
+        aboutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCallback.onButtonClick(new AboutFragment());
+            }
+        });
+
+        return view;
     }
 
 }
