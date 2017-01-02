@@ -29,8 +29,8 @@
                 android:layout_marginTop="10dp"
                 android:padding="10dp"
                 android:background="@drawable/raspi_button"
-                android:id="@+id/connectToPIButton"
-                android:text="@string/button1"
+                android:id="@+id/discoverButtonFragment"
+                android:text="@string/discover"
                 android:layout_gravity="center"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent" />

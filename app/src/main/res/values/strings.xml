@@ -7,8 +7,16 @@
     <string name="about_button_string">About</string>
     <string name="about_text">GeoQGame - GPS based game. Created as an side effect of delevoped Perl module for coordinates post-processing.</string>
     <string name="for_the_text">For the Anita ;-).</string>
+    <string name="discover">Discover</string>
+    <string name="start">Start!</string>
+    <string name="no_data">No data</string>
+    <string name="distance">Distance</string>
+    <string name="zoom_plus">+</string>
+    <string name="zoom_minus">-</string>
+
 
     <string name="button1">Button1</string>
     <string name="button2">Button2</string>
     <string name="button3">Button3</string>
+    <string name="title_activity_discover">Map</string>
 </resources>

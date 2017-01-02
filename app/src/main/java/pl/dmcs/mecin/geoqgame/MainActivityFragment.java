@@ -3,6 +3,7 @@ package pl.dmcs.mecin.geoqgame;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,7 +20,7 @@ public class MainActivityFragment extends Fragment {
 
     // Interface for parent to communicate
     public interface OnClickActivityAction {
-        public void onButtonClick(Fragment fragment);
+        void onButtonClick(Fragment fragment);
     }
 
     @Override
@@ -41,6 +42,16 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_main_activity, container, false);
+
+        Button discoverButton = (Button) view.findViewById(R.id.discoverButtonFragment);
+
+        discoverButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity(), DiscoverActivity.class);
+                startActivity(intent);
+            }
+        });
 
         Button aboutButton = (Button) view.findViewById(R.id.aboutButtonFragment);
 
