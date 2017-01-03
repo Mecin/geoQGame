@@ -35,7 +35,8 @@
 
         <activity
             android:name=".DiscoverActivity"
-            android:label="@string/title_activity_discover"></activity>
+            android:label="@string/title_activity_discover"
+            android:configChanges="orientation|screenSize"></activity>
     </application>
 
 </manifest>

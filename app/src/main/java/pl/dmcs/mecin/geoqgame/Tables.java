@@ -92,6 +92,9 @@ public class Tables {
     }
 
     private static JSONObject convertInputStreamToJSONObject(InputStream inputStream, String operation) throws JSONException, IOException {
+        if (inputStream == null) {
+            return new JSONObject();
+        }
         BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inputStream));
         String line = "";
         String result = "";
