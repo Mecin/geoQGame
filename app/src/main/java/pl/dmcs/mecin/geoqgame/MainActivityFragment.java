@@ -53,6 +53,15 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        Button historyButton = (Button) view.findViewById(R.id.historyButtonFragment);
+
+        historyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCallback.onButtonClick(new HistoryFragment());
+            }
+        });
+
         Button aboutButton = (Button) view.findViewById(R.id.aboutButtonFragment);
 
         aboutButton.setOnClickListener(new View.OnClickListener() {

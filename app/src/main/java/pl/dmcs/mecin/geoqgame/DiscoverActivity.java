@@ -47,7 +47,7 @@ import static java.lang.Math.sin;
 
 public class DiscoverActivity extends FragmentActivity implements OnMapReadyCallback, HttpAsyncTask.AsyncResponse {
 
-    private static int MAP_ZOOM = 15;
+    private static int MAP_ZOOM = 16;
     private static int DISTANCE_TOLERANCE = 5;
     private static Double EARTH_RADIUS = 6378.41;
     private static int MIN_TIME_INTERVAL = 1000;
@@ -63,6 +63,9 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     private Map<Integer, Double[]> questMap = new HashMap<Integer, Double[]>();
     private int currentQuestPointer = -1;
     private boolean gameStarted = false;
+    private long startTime;
+    private long durationTime;
+    private Double measuredDistance;
 
     private Marker myPositionMarker;
     private Polyline currQuestTrace;
@@ -80,6 +83,8 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     private LocationManager locationManager;
     private String myLatitude = "";
     private String myLongitude = "";
+
+    DatabaseHandler db = new DatabaseHandler(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -288,6 +293,12 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     private void startGame() {
         gameStarted = true;
 
+        startTime = 0;
+
+        measuredDistance = 0.0;
+
+        startTime = System.currentTimeMillis();
+
         startButton.setText(STOP_BUTTON);
 
         currentQuestPointer = 0;
@@ -327,6 +338,19 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
 
         currentQuestPointer = -1;
 
+        durationTime = (System.currentTimeMillis() - startTime)/1000;
+
+        Log.d("stopGame","duration: " + durationTime + " s, distance: " + measuredDistance + " m.");
+
+        db.addHistoryEntry(measuredDistance, durationTime);
+
+        // check
+        List<String> history = db.getHistory();
+
+        for(int i = 0; i < history.size(); i++) {
+            Log.d("hisCk", history.get(i));
+        }
+
         gameStarted = false;
     }
 
@@ -341,6 +365,8 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         Double distance = getDistance(myPos.latitude,myPos.longitude,curQPos.latitude,curQPos.longitude,EARTH_RADIUS);
         distance *= 1000;
         distance = Double.valueOf(Math.round(distance));
+
+        measuredDistance += distance;
 
         Log.d("updateGame","Distance between me nad quest " + currentQuestPointer + " is " + distance + " meters.");
 

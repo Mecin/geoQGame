@@ -80,8 +80,8 @@
                 android:layout_marginTop="10dp"
                 android:padding="10dp"
                 android:background="@drawable/raspi_button"
-                android:id="@+id/scanner"
-                android:text="@string/button2"
+                android:id="@+id/historyButtonFragment"
+                android:text="@string/history"
                 android:layout_gravity="center"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent" />
