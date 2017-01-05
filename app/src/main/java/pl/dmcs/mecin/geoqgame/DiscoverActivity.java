@@ -42,7 +42,7 @@ import static java.lang.Math.acos;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
-public class DiscoverActivity extends FragmentActivity implements OnMapReadyCallback, HttpAsyncTask.AsyncResponse {
+public class DiscoverActivity extends FragmentActivity implements OnMapReadyCallback, HttpAsyncTask.AsyncResponse, LocationListener {
 
     private static int MAP_ZOOM = 16;
     private static int DISTANCE_TOLERANCE = 5;
@@ -79,9 +79,9 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     private TextView displayTextView;
 
     private LocationManager locationManager;
-    private LocationListener locationListener;
     private String provider;
     Criteria criteria;
+    Location myLocation;
 
     private String myLatitude = "";
     private String myLongitude = "";
@@ -170,39 +170,6 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
-        // Define a listener that responds to location updates
-        locationListener = new LocationListener() {
-            public void onLocationChanged(Location location) {
-                // Called when a new location is found by the network location provider.
-                myLatitude = String.format("%.4f", location.getLatitude());
-                myLongitude = String.format("%.4f", location.getLongitude());
-                latLngField.setText("(" + myLatitude + "," + myLongitude + ")");
-
-                LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-
-                if (myPositionMarker != null) myPositionMarker.setPosition(myLatLng);
-
-                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(myLatLng, MAP_ZOOM);
-
-                mMap.animateCamera(cameraUpdate);
-
-                if (gameStarted) {
-                    Log.d("game", "calc distance between me and " + currentQuestPointer + " quest.");
-                    updateGameStatus();
-                }
-
-            }
-
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-            }
-
-            public void onProviderEnabled(String provider) {
-            }
-
-            public void onProviderDisabled(String provider) {
-            }
-        };
-
         criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setCostAllowed(false);
@@ -211,26 +178,49 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
 
         Log.d("bestProvider", provider);
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
-            toast.show();
-        } else {
-            locationManager.requestLocationUpdates(provider, MIN_TIME_INTERVAL, MIN_DISTANCE, locationListener);
-        }
+        myReqLocationUp();
 
         timer.schedule(myTask, 2 * MIN_TIME_INTERVAL);
     }
 
+    @Override
+    public void onLocationChanged(Location location) {
+        myLocation = location;
+        // Called when a new location is found by the network location provider.
+        myLatitude = String.format("%.4f", location.getLatitude());
+        myLongitude = String.format("%.4f", location.getLongitude());
+        latLngField.setText("(" + myLatitude + "," + myLongitude + ")");
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+        LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+
+        if (myPositionMarker != null) myPositionMarker.setPosition(myLatLng);
+
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(myLatLng, MAP_ZOOM);
+
+        mMap.animateCamera(cameraUpdate);
+
+        if (gameStarted) {
+            Log.d("game", "calc distance between me and " + currentQuestPointer + " quest.");
+            updateGameStatus();
+        }
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -286,6 +276,69 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
             if (startButton != null) {
                 startButton.setText("Retry");
             }
+        }
+    }
+
+    private void myReqLocationUp() {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
+            toast.show();
+        } else {
+
+            Boolean isGPSEnabled = locationManager
+                    .isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+            Boolean isNetworkEnabled = locationManager
+                    .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+            if (!isGPSEnabled && !isNetworkEnabled) {
+                Toast.makeText(getApplicationContext(), "Permissions for GPS and Network denied!", Toast.LENGTH_LONG).show();
+            } else {
+                if (isNetworkEnabled) {
+                    locationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            MIN_TIME_INTERVAL,
+                            MIN_DISTANCE, this);
+
+                    provider = LocationManager.NETWORK_PROVIDER;
+
+                    Log.d("Network", "Network Enabled");
+
+                    if (locationManager != null) {
+                        myLocation = locationManager
+                                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        if (myLocation != null) {
+                            Log.d("Network", "last location not null");
+
+                            //onLocationChanged(myLocation);
+                        }
+                    }
+                }
+
+                if (isGPSEnabled) {
+                    if (myLocation == null) {
+                        locationManager.requestLocationUpdates(
+                                LocationManager.GPS_PROVIDER,
+                                MIN_TIME_INTERVAL,
+                                MIN_DISTANCE, this);
+
+                        provider = LocationManager.GPS_PROVIDER;
+
+                        Log.d("GPS", "GPS Enabled");
+
+                        if (locationManager != null) {
+                            myLocation = locationManager
+                                    .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            if (myLocation != null) {
+                                Log.d("GPS", "last location not null");
+                                //onLocationChanged(myLocation);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //locationManager.requestLocationUpdates(provider, MIN_TIME_INTERVAL, MIN_DISTANCE, this);
         }
     }
 
@@ -411,7 +464,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
             Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
             toast.show();
         } else {
-            locationManager.removeUpdates(locationListener);
+            locationManager.removeUpdates(this);
         }
         timer.cancel();
         myTask.cancel();
@@ -424,12 +477,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     @Override
     public void onResume() {
         super.onResume();
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
-            toast.show();
-        } else {
-            locationManager.requestLocationUpdates(provider, MIN_TIME_INTERVAL, MIN_DISTANCE, locationListener);
-        }
+        myReqLocationUp();
     }
 
 
