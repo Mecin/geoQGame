@@ -3,11 +3,11 @@ package pl.dmcs.mecin.geoqgame;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -32,11 +32,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -80,7 +77,12 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     private Button zoomInButton;
     private Button zoomOutButton;
     private TextView displayTextView;
+
     private LocationManager locationManager;
+    private LocationListener locationListener;
+    private String provider;
+    Criteria criteria;
+
     private String myLatitude = "";
     private String myLongitude = "";
 
@@ -124,20 +126,21 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
 
                 String startButtonText = startButton.getText().toString();
 
-                if(startButtonText.equals(RETRY_BUTTON)) {
+                if (startButtonText.equals(RETRY_BUTTON)) {
                     startButton.setText(START_BUTTON);
                     noOfTry = 0;
                     notifyFailedOperation("");
                     return;
                 }
 
-                if(startButtonText.equals(STOP_BUTTON)) {
+                if (startButtonText.equals(STOP_BUTTON)) {
                     stopGame();
                     displayTextView.setText("Stopped");
                     return;
                 }
 
-                if(questMap.isEmpty() && currentQuestPointer != -1) {
+                Log.d("before start", "questmap: " + questMap.isEmpty() + " currentqp: " + currentQuestPointer);
+                if (questMap.isEmpty() && currentQuestPointer == -1) {
                     Toast toast = Toast.makeText(getApplicationContext(), "Quests not found!", Toast.LENGTH_LONG);
                     toast.show();
 
@@ -150,7 +153,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
                     return;
                 }
 
-                if(startButtonText.equals(START_BUTTON)) {
+                if (startButtonText.equals(START_BUTTON)) {
                     startGame();
                     return;
                 }
@@ -168,7 +171,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         // Define a listener that responds to location updates
-        LocationListener locationListener = new LocationListener() {
+        locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Called when a new location is found by the network location provider.
                 myLatitude = String.format("%.4f", location.getLatitude());
@@ -177,14 +180,14 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
 
                 LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-                if(myPositionMarker != null) myPositionMarker.setPosition(myLatLng);
+                if (myPositionMarker != null) myPositionMarker.setPosition(myLatLng);
 
                 CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(myLatLng, MAP_ZOOM);
 
                 mMap.animateCamera(cameraUpdate);
 
-                if(gameStarted) {
-                    Log.d("game","calc distance between me and " + currentQuestPointer + " quest.");
+                if (gameStarted) {
+                    Log.d("game", "calc distance between me and " + currentQuestPointer + " quest.");
                     updateGameStatus();
                 }
 
@@ -200,27 +203,23 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
             }
         };
 
+        criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setCostAllowed(false);
 
-        // Register the listener with the Location Manager to receive location updates
+        provider = locationManager.getBestProvider(criteria, true);
+
+        Log.d("bestProvider", provider);
+
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-
             Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
             toast.show();
-
-            return;
+        } else {
+            locationManager.requestLocationUpdates(provider, MIN_TIME_INTERVAL, MIN_DISTANCE, locationListener);
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_INTERVAL, MIN_DISTANCE, locationListener);
 
-        timer.schedule(myTask, 2*MIN_TIME_INTERVAL);
+        timer.schedule(myTask, 2 * MIN_TIME_INTERVAL);
     }
-
 
 
     /**
@@ -236,7 +235,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         LatLng meStart;
-        if(myLongitude.equals("") && myLongitude.equals("")) {
+        if (myLongitude.equals("") && myLongitude.equals("")) {
             meStart = new LatLng(-34, 151);
         } else {
             meStart = new LatLng(Double.valueOf(myLatitude), Double.valueOf(myLongitude));
@@ -250,7 +249,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     public void getQuests(JSONObject quests) {
         noOfTry = 0;
 
-        if(!questMap.isEmpty() || currentQuestPointer != -1 || gameStarted) {
+        if (!questMap.isEmpty() || currentQuestPointer != -1 || gameStarted) {
             Log.d("getQuests", "Quests not empty! Current quest: " + currentQuestPointer + ".");
             Toast.makeText(getApplicationContext(), "Error, game in progress.", Toast.LENGTH_SHORT).show();
             return;
@@ -261,11 +260,11 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         //currentQuestPointer = -1;
 
         try {
-            for(int i = 1; i < NO_OF_QUESTS+1; i++) {
+            for (int i = 1; i < NO_OF_QUESTS + 1; i++) {
                 Log.d("JSON " + i + " ", quests.getJSONObject(String.valueOf(i)).toString());
                 tmpJQuest = quests.getJSONObject(String.valueOf(i));
-                Log.d("tmpJQuest", tmpJQuest.getString("lat") + " " + tmpJQuest.getString("lng") );
-                Log.d("double", Double.valueOf(tmpJQuest.getString("lat")) + " " + Double.valueOf(tmpJQuest.getString("lng")) );
+                Log.d("tmpJQuest", tmpJQuest.getString("lat") + " " + tmpJQuest.getString("lng"));
+                Log.d("double", Double.valueOf(tmpJQuest.getString("lat")) + " " + Double.valueOf(tmpJQuest.getString("lng")));
                 questMap.put(i, new Double[]{Double.valueOf(tmpJQuest.getString("lat")), Double.valueOf(tmpJQuest.getString("lng"))});
             }
         } catch (JSONException e) {
@@ -280,11 +279,11 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     public void notifyFailedOperation(String msg) {
         noOfTry++;
         if (noOfTry < MAX_NO_OF_TRY) {
-            Toast.makeText(getApplicationContext(), msg + " Retrying in "+(RETRY_INTERVAL/1000)+" s ("+noOfTry+"/"+MAX_NO_OF_TRY+").", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), msg + " Retrying in " + (RETRY_INTERVAL / 1000) + " s (" + noOfTry + "/" + MAX_NO_OF_TRY + ").", Toast.LENGTH_SHORT).show();
             reScheduleTimer(RETRY_INTERVAL);
         } else {
-            Toast.makeText(getApplicationContext(), msg + " ("+noOfTry+"/"+MAX_NO_OF_TRY+").", Toast.LENGTH_SHORT).show();
-            if(startButton != null) {
+            Toast.makeText(getApplicationContext(), msg + " (" + noOfTry + "/" + MAX_NO_OF_TRY + ").", Toast.LENGTH_SHORT).show();
+            if (startButton != null) {
                 startButton.setText("Retry");
             }
         }
@@ -320,13 +319,13 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         questCoords = new LatLng(questMap.get(5)[0], questMap.get(5)[1]);
         questMarkers[4] = mMap.addMarker(new MarkerOptions().position(questCoords).title("Quest 5.").icon(BitmapDescriptorFactory.fromResource(R.drawable.q5)));
 
-        currQuestTrace = mMap.addPolyline(new PolylineOptions().add(myPositionMarker.getPosition(),questMarkers[currentQuestPointer].getPosition()).width(5).color(Color.RED));
+        currQuestTrace = mMap.addPolyline(new PolylineOptions().add(myPositionMarker.getPosition(), questMarkers[currentQuestPointer].getPosition()).width(3).color(Color.RED));
 
         updateGameStatus();
     }
 
     private void stopGame() {
-        for(int i = 0; i < NO_OF_QUESTS; i++){
+        for (int i = 0; i < NO_OF_QUESTS; i++) {
             questMarkers[i].remove();
         }
 
@@ -338,45 +337,38 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
 
         currentQuestPointer = -1;
 
-        durationTime = (System.currentTimeMillis() - startTime)/1000;
+        durationTime = (System.currentTimeMillis() - startTime) / 1000;
 
-        Log.d("stopGame","duration: " + durationTime + " s, distance: " + measuredDistance + " m.");
+        Log.d("stopGame", "duration: " + durationTime + " s, distance: " + measuredDistance + " m.");
 
         db.addHistoryEntry(measuredDistance, durationTime);
-
-        // check
-        List<String> history = db.getHistory();
-
-        for(int i = 0; i < history.size(); i++) {
-            Log.d("hisCk", history.get(i));
-        }
 
         gameStarted = false;
     }
 
     private void updateGameStatus() {
 
-        for(int i = 0; i < currentQuestPointer; i++) {
+        for (int i = 0; i < currentQuestPointer; i++) {
             questMarkers[i].setIcon(BitmapDescriptorFactory.fromResource(R.drawable.qv));
         }
 
         LatLng myPos = myPositionMarker.getPosition();
         LatLng curQPos = questMarkers[currentQuestPointer].getPosition();
-        Double distance = getDistance(myPos.latitude,myPos.longitude,curQPos.latitude,curQPos.longitude,EARTH_RADIUS);
+        Double distance = getDistance(myPos.latitude, myPos.longitude, curQPos.latitude, curQPos.longitude, EARTH_RADIUS);
         distance *= 1000;
         distance = Double.valueOf(Math.round(distance));
 
         measuredDistance += distance;
 
-        Log.d("updateGame","Distance between me nad quest " + currentQuestPointer + " is " + distance + " meters.");
+        Log.d("updateGame", "Distance between me nad quest " + currentQuestPointer + " is " + distance + " meters.");
 
-        displayTextView.setText(distance+" m.");
+        displayTextView.setText(distance + " m.");
 
         //currQuestTrace = mMap.addPolyline(new PolylineOptions().add(myPositionMarker.getPosition(),questMarkers[0].getPosition()).width(5).color(Color.RED));
 
-        if(distance <= DISTANCE_TOLERANCE) {
+        if (distance <= DISTANCE_TOLERANCE) {
             Log.d("updateGame", "Reached quest point " + currentQuestPointer + "!");
-            if(currentQuestPointer == NO_OF_QUESTS-1) {
+            if (currentQuestPointer == NO_OF_QUESTS - 1) {
                 questMarkers[currentQuestPointer].setIcon(BitmapDescriptorFactory.fromResource(R.drawable.qv));
                 // finish game
                 stopGame();
@@ -385,7 +377,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
                 return;
             }
             //recreate polyline and increment currentQuestPointer
-            Toast.makeText(getApplicationContext(), "Checkpoint reached! (" + (currentQuestPointer+1) + "/" + NO_OF_QUESTS + ")" , Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Checkpoint reached! (" + (currentQuestPointer + 1) + "/" + NO_OF_QUESTS + ")", Toast.LENGTH_SHORT).show();
             currentQuestPointer++;
             updateGameStatus();
         }
@@ -399,7 +391,7 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     }
 
     private Double getDistance(Double lat1, Double lng1, Double lat2, Double lng2, Double earthRadius) {
-        return acos(sin(Math.toRadians(lat1))*sin(Math.toRadians(lat2))+cos(Math.toRadians(lat1))*cos(Math.toRadians(lat2))*cos(Math.toRadians(lng1)-Math.toRadians(lng2)))*earthRadius;
+        return acos(sin(Math.toRadians(lat1)) * sin(Math.toRadians(lat2)) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * cos(Math.toRadians(lng1) - Math.toRadians(lng2))) * earthRadius;
     }
 
     private void reScheduleTimer(int interval) {
@@ -411,6 +403,35 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         myHttpAsyncTask.delegate = this;
         timer.schedule(myTask, interval);
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
+            toast.show();
+        } else {
+            locationManager.removeUpdates(locationListener);
+        }
+        timer.cancel();
+        myTask.cancel();
+        if (!gameStarted) {
+            startButton.setText(RETRY_BUTTON);
+        }
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast toast = Toast.makeText(getApplicationContext(), "Permissions for GPS denied!", Toast.LENGTH_LONG);
+            toast.show();
+        } else {
+            locationManager.requestLocationUpdates(provider, MIN_TIME_INTERVAL, MIN_DISTANCE, locationListener);
+        }
+    }
+
 
     public class MyTimerTask extends TimerTask {
 

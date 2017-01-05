@@ -14,7 +14,8 @@
     android:id="@+id/detailsLayout"
     tools:context="pl.dmcs.mecin.geoqgame.DiscoverActivity"
     android:orientation="horizontal"
-    android:gravity="center">
+    android:gravity="center"
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/display"
@@ -26,6 +27,7 @@
 
 
     <Button
+        android:background="@drawable/raspi_button"
         android:id="@+id/start_button"
         android:paddingRight="10dp"
         android:paddingLeft="10dp"
@@ -43,11 +45,13 @@
         android:text="@string/no_data"/>
 
     <Button
+        android:background="@drawable/raspi_button"
         android:id="@+id/zoom_in"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/zoom_plus"/>
     <Button
+        android:background="@drawable/raspi_button"
         android:id="@+id/zoom_out"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

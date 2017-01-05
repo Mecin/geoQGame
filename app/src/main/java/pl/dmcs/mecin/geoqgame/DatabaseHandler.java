@@ -71,17 +71,27 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         return returnString;
     }
 
-    protected List<String> getHistory() {
+    protected List<String> getHistory(int noOfRows) {
         List<String> historyList = new ArrayList<String>();
 
-        String selectQuery = "SELECT * FROM " + TABLE_HISTORY;
+        String selectQuery = "";
+
+        if (noOfRows == -1) {
+            selectQuery = "SELECT * FROM " + TABLE_HISTORY + " ORDER BY " + KEY_ID + " DESC";
+        } else {
+            selectQuery = "SELECT * FROM " + TABLE_HISTORY + " ORDER BY " + KEY_ID + " DESC LIMIT " + noOfRows;
+        }
 
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
             do {
-                String historyEntryString = cursor.getString(0) + " " + cursor.getString(1) + " " + cursor.getString(2);
+                Double time = Double.valueOf(cursor.getString(2));
+                Double hours = Math.floor(time/3600);
+                time = time - hours * 3600;
+                Double minutes = Math.floor(time/60);
+                String historyEntryString = cursor.getString(0) + ". " + cursor.getString(1) + " meters in " + String.format("%.0f", hours) + " hours " + String.format("%.0f", minutes) + " minutes " + String.format("%.0f", (time-minutes*60)) + " seconds.";
                 historyList.add(historyEntryString);
             } while (cursor.moveToNext());
         }
