@@ -187,11 +187,11 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
     public void onLocationChanged(Location location) {
         myLocation = location;
         // Called when a new location is found by the network location provider.
-        myLatitude = String.format("%.4f", location.getLatitude());
-        myLongitude = String.format("%.4f", location.getLongitude());
+        myLatitude = String.format("%.4f", myLocation.getLatitude());
+        myLongitude = String.format("%.4f", myLocation.getLongitude());
         latLngField.setText("(" + myLatitude + "," + myLongitude + ")");
 
-        LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+        LatLng myLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
 
         if (myPositionMarker != null) myPositionMarker.setPosition(myLatLng);
 
@@ -309,7 +309,6 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
                                 .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                         if (myLocation != null) {
                             Log.d("Network", "last location not null");
-
                             //onLocationChanged(myLocation);
                         }
                     }
@@ -487,6 +486,11 @@ public class DiscoverActivity extends FragmentActivity implements OnMapReadyCall
         public void run() {
             //Create and send JSON with position and vehicle number (if exists)
             JSONObject myPositionJsonObject = new JSONObject();
+
+            if (myLocation != null) {
+                myLatitude = String.valueOf(myLocation.getLatitude());
+                myLongitude = String.valueOf(myLocation.getLongitude());
+            }
 
             try {
                 myPositionJsonObject.put(Tables.Position.LATITUDE, myLatitude);
